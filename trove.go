@@ -72,6 +72,11 @@ func Load() *Settings {
 	if websiteBaseURL == "" {
 		s.strings["WEBSITE_BASE_URL"] = s.strings["PROTO"] + s.strings["CANONICAL_URL"] + "/"
 	}
+
+	if s.Get("REDIS_URL") != "" {
+		s.strings["CACHE_URL"] = s.Get("REDIS_URL")
+	}
+
 	return s
 }
 
