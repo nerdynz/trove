@@ -12,8 +12,8 @@ import (
 
 // Settings - common settings used around the site. Currently loaded into the datastore object
 type Settings struct {
-	ServerIsLVE bool
-	ServerIsDEV bool
+	// ServerIsLVE bool
+	// ServerIsDEV bool
 	// ServerIs             string
 	// DSN                  string
 	// CanonicalURL         string
@@ -45,11 +45,14 @@ func Load() *Settings {
 	s := &Settings{}
 	s.bools = map[string]bool{}
 	s.strings = map[string]string{}
-	s.ServerIsDEV = (os.Getenv("IS_DEV") == "true")
-	s.ServerIsLVE = !s.ServerIsDEV
-	s.strings["SERVER_IS"] = "DEV"
-	if s.ServerIsLVE {
+	// s.ServerIsDEV = (os.Getenv("IS_DEV") == "true")
+	// s.ServerIsLVE = !s.ServerIsDEV
+	if os.Getenv("IS_DEV") == "true" {
+		s.strings["SERVER_IS"] = "DEV"
+		s.bools["SERVER_IS_DEV"] = true
+	} else {
 		s.strings["SERVER_IS"] = "LVE"
+		s.bools["SERVER_IS_LVE"] = true
 	}
 	s.strings["DSN"] = os.Getenv("DATABASE_URL")
 
@@ -143,8 +146,8 @@ func (s *Settings) GetBool(setting string) bool {
 }
 
 func (s *Settings) IsProduction() bool {
-	return s.ServerIsLVE
+	return s.GetBool("SERVER_IS_LVE")
 }
 func (s *Settings) IsDevelopment() bool {
-	return !s.ServerIsLVE
+	return s.GetBool("SERVER_IS_DEV")
 }
