@@ -40,7 +40,11 @@ type Settings struct {
 func Load() *Settings {
 	err := dotenv.Load()
 	if err != nil {
-		panic(err)
+		if strings.Contains(err.Error(), "no such file or directory") {
+			// assume no dotenv file is present... i.e live
+		} else {
+			panic(err)
+		}
 	}
 	s := &Settings{}
 	s.bools = map[string]bool{}
