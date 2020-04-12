@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	dotenv "github.com/joho/godotenv"
@@ -21,7 +22,7 @@ type Settings struct {
 	// ImageBaseURL         string
 	// Sitename             string
 	// EncKey               string
-	ServerPort string
+	// ServerPort string
 	// AttachmentsFolder    string
 	// MaxImageWidth        int
 	// IsSecured            bool
@@ -34,7 +35,9 @@ type Settings struct {
 	// CacheNamespace       string
 	// LoggingEnabled       bool
 	bools   map[string]bool
+	bLock   sync.RWMutex
 	strings map[string]string
+	sLock   sync.RWMutex
 }
 
 func Load() *Settings {
@@ -47,6 +50,9 @@ func Load() *Settings {
 		}
 	}
 	s := &Settings{}
+	s.bLock = sync.RWMutex{}
+	s.sLock = sync.RWMutex{}
+
 	s.bools = map[string]bool{}
 	s.strings = map[string]string{}
 	// s.ServerIsDEV = (os.Getenv("IS_DEV") == "true")
@@ -87,24 +93,9 @@ func Load() *Settings {
 	return s
 }
 
-func (s *Settings) Get(setting string) string {
-	val, ok := s.strings[setting]
-	if !ok {
-		newVal := os.Getenv(setting)
-		s.strings[setting] = newVal
-		val = newVal
-	}
-	return val
-}
-
 // GetDuration gets a duration from either a duration formatted string (time.ParseDuration) or a string ending in day(s) e.g. 30days
 func (s *Settings) GetDuration(setting string) time.Duration {
-	val, ok := s.strings[setting]
-	if !ok {
-		newVal := os.Getenv(setting)
-		s.strings[setting] = newVal
-		val = newVal
-	}
+	val := s.Get(setting)
 
 	oddMod := ""
 	if strings.Contains(val, "day") {
@@ -142,8 +133,24 @@ func (s *Settings) GetDuration(setting string) time.Duration {
 func (s *Settings) GetBool(setting string) bool {
 	val, ok := s.bools[setting]
 	if !ok {
+		s.bLock.Lock() // map is shared across the whole application, so it needs to be
+		defer s.bLock.Unlock()
+
 		newVal := strings.ToLower(os.Getenv(setting)) == "true" || strings.ToLower(os.Getenv(setting)) == "1"
 		s.bools[setting] = newVal
+		val = newVal
+	}
+	return val
+}
+
+func (s *Settings) Get(setting string) string {
+	val, ok := s.strings[setting]
+	if !ok {
+		s.sLock.Lock() // map is shared across the whole application, so it needs to be
+		defer s.sLock.Unlock()
+
+		newVal := os.Getenv(setting)
+		s.strings[setting] = newVal
 		val = newVal
 	}
 	return val
