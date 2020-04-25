@@ -143,13 +143,21 @@ func (s *Settings) GetBool(setting string) bool {
 	return val
 }
 
+// Get gets and caches an ENV setting. theDefault will be used if setting is blank and is optional
 func (s *Settings) Get(setting string) string {
+	return s.GetWithDefault(setting, "")
+}
+
+func (s *Settings) GetWithDefault(setting string, theDefault string) string {
 	val, ok := s.strings[setting]
 	if !ok {
 		s.sLock.Lock() // map is shared across the whole application, so it needs to be
 		defer s.sLock.Unlock()
 
 		newVal := os.Getenv(setting)
+		if newVal == "" && theDefault != "" {
+			return theDefault
+		}
 		s.strings[setting] = newVal
 		val = newVal
 	}
